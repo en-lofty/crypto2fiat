@@ -2,6 +2,7 @@ from time import time
 from typing import Union
 
 from coinmarketcap import Market
+from my_utils import *
 
 from config import *
 
@@ -11,30 +12,31 @@ class DataParser:
     _data: dict
     _coin_ids: dict
 
-    def __init__(self) -> None:
+    def __init__(self, no_cache=False) -> None:
         super().__init__()
         self._generate_ids()
+        self.no_cache = no_cache
         self._data = dirs.load("data") if dirs.exists("data") else None
         logger.debug("DataParser initialized")
 
+    @measure_time
     def _get_id(self, coin_name: str) -> Union[int, None]:
         """
         Get the id of a coin via its name
         """
-        t1 = time()
+
         # find the element with `coin_name` as a value
-        logger.debug(f"Grabbing {coin_name.upper()} id...")
-        for i, v in self._coin_ids.items():
-            if coin_name.upper() in v.values() or coin_name.upper() == v.get("symbol"):
-                t2 = time()
-                logger.debug(f"_get_id() time elapsed: {t2 - t1} seconds ")
+        logger.debug(f"Grabbing {coin_name} id...")
+
+        for k, v in self._coin_ids.items():
+            if coin_name in v.values() or coin_name == v.get("symbol"):
                 return v.get("id")
-        return None
 
     @property
+    @measure_time
     def data(self):
         # first check to see if data exists and is still within valid time frame
-        if not self.use_existing_data():
+        if not self.use_existing_data or self.no_cache:
             logger.info("Downloading coin data from CoinMarketCap server.")
             response = self.coinmarketcap.ticker()
             if "data" not in response:
@@ -46,10 +48,17 @@ class DataParser:
             self._data = response["data"]
         return self._data or dirs.load("data")
 
+    @measure_time
     def _get_ticker(self, coin: str, fiat: str) -> Union[dict, None]:
+        """
+        Grab the coin information from the CoinMarketCap servers
+        """
         logger.info(f"Grabbing {coin} ticker")
         coin_id = self._get_id(coin)
+        if str(coin_id) not in self.data:
+            exit(f"'{coin}' not recognized.")
         ticker = self.data[str(coin_id)]
+
 
         if fiat not in ticker["quotes"]:
             new_ticker = self.coinmarketcap.ticker(str(coin_id), convert=fiat)["data"]
@@ -63,8 +72,9 @@ class DataParser:
         return self.data[str(coin_id)]
         # check last coin data save date
 
-    @staticmethod
-    def use_existing_data() -> bool:
+    @measure_time
+    @property
+    def use_existing_data(self) -> bool:
         """
         Check to see if data needs to be refreshed
         """
@@ -78,15 +88,18 @@ class DataParser:
         # was the last time we checked less than 30 minutes ago?
         return int(round(time() * 1000)) - last_check_time < settings.CACHE_REFRESH_TIME * (1000 * 60)
 
+    @measure_time
     def _get_fiat_price(self, fiat: str, coin: str) -> float:
         """
         Get the value in fiat for 1 coin
         """
-        quotes = self._get_ticker(coin.upper(), fiat)["quotes"]
-        if fiat.upper() not in quotes:
-            exit("The fiat currency you entered is unrecognized.")
-        return float(quotes[fiat.upper()]["price"])
+        quotes = self._get_ticker(coin, fiat).get("quotes")
+        if fiat not in quotes:
+            exit("The fiat currency you entered is unrecognized. "
+                 "Use --help to see available currencies.")
+        return float(quotes[fiat]["price"])
 
+    @measure_time
     def convert_to_fiat(self, fiat: str, coin: str, amount: float) -> float:
         """
         Convert the given coin to the equivalent fiat amount
@@ -94,6 +107,7 @@ class DataParser:
         price = self._get_fiat_price(fiat, coin)
         return float(amount * price)
 
+    @measure_time
     def convert_to_crypto(self, fiat: str, coin: str, amount: float):
         """
         Take a usd amount and find the crypto coin equivalent
@@ -101,6 +115,7 @@ class DataParser:
         price = self._get_fiat_price(fiat, coin)
         return float(amount / price)
 
+    @measure_time
     def _generate_ids(self):
         if dirs.exists("ids"):
             self._coin_ids = dirs.load("ids")

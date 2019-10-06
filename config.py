@@ -17,17 +17,15 @@ logfile(join(dirs.user_log_dir, "logs.log"))
 dirs.register_config_file("settings.json", "settings")
 dirs.register_config_file("settings.json.example", "default-settings")
 dirs.register_data_file("coin_ids.json", "ids")
+dirs.register_cache_file("metadata.json", "metadata")
 dirs.register_cache_file("coin_data_cache.json", "data")
-dirs.register_data_file("metadata.json", "metadata")
 
 
 class Settings:
 
     def __init__(self) -> None:
-        super().__init__()
         # the maximum amount of minutes before refreshing data
         self.CACHE_REFRESH_TIME = 10
-
         # thee default currency
         self.DEFAULT_FIAT = "USD"
 

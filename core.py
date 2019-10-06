@@ -1,16 +1,13 @@
 #!/home/raphael/.local/share/virtualenvs/python-O_96yZmr/bin/python
-import time
 
 import click
 import logzero
 import pyperclip
 import sh
+from my_utils import util_setup, MeasureBlockTime
 
 from config import *
 from data_parser import DataParser
-
-
-# todo add logging to log directory
 
 @click.command()
 @click.argument('coin')
@@ -21,8 +18,11 @@ from data_parser import DataParser
 @click.option('--verbose', '-v', multiple=True, is_flag=True, default=False)
 @click.option('--timer', '-t', multiple=True, is_flag=True, default=False)
 @click.option('--wordform', '-w', multiple=True, is_flag=True, default=False,
-              help="Say the command in plain words for clarity")
-def core(coin: str, fiat: str, amount: float, reverse: bool, clipboard: bool, verbose: bool, timer, wordform):
+              help="Prints the command in plain words for clarity")
+@click.option('--no-cache', is_flag=True, default=False,
+              help=f"Do not use cached data. Price data is cached for {settings.CACHE_REFRESH_TIME} minutes")
+def core(coin: str, fiat: str, amount: float, reverse: bool, clipboard: bool, verbose: bool, timer: bool,
+         wordform: bool, no_cache: bool):
     """
     Converts a cryptocurrency amount to a fiat equivalent or vice-versa
 
@@ -37,36 +37,39 @@ def core(coin: str, fiat: str, amount: float, reverse: bool, clipboard: bool, ve
     `c2f btc usd 50 --reverse`
     Translates to: What is $50 USD worth in BTC?
     """
-    t1 = time.time()
-    if verbose:
-        logzero.loglevel(logging.DEBUG)
+    util_setup(logger, timer, enabled_=True)
+    with MeasureBlockTime("Main block"):
+        if verbose:
+            logzero.loglevel(logging.DEBUG)
 
-    data_parser = DataParser()
-    fiat = fiat.upper()
-    coin = coin.upper()
+        data_parser = DataParser(no_cache=no_cache)
+        fiat = fiat.upper()
+        coin = coin.upper()
 
-    if reverse:
-        logger.debug(f"Converting {amount} {fiat} to {coin}")
-        if wordform:
-            click.echo(f"What is ${amount:.2f} {fiat} worth in {coin}?")
-        quantity = data_parser.convert_to_crypto(fiat.upper(), coin.upper(), amount)
-        print("{:.8f}".format(quantity))
-    else:
-        logger.debug(f"Converting {amount} {coin} to {fiat}")
-        if wordform:
-            click.echo(f"How much is {amount} {coin} in {fiat}?")
-        quantity = data_parser.convert_to_fiat(fiat.upper(), coin.upper(), amount)
-        print("{:,.2f}".format(quantity))
+        try:
+            if reverse:
+                logger.debug(f"Converting {amount} {fiat} to {coin}")
+                if wordform:
+                    click.echo(f"What is ${amount:.2f} {fiat} worth in {coin}?")
+                quantity = data_parser.convert_to_crypto(fiat.upper(), coin.upper(), amount)
+                formatted_quantity = "{:.8f}".format(quantity)
 
-    if clipboard:
-        pyperclip.copy(str(quantity))
-        sh.notify_send("crypto2fiat", f"{quantity} copied to clipboard")
-    t2 = time.time()
-    if timer:
-        print(f"Time elapsed: {t2 - t1:.3f} seconds")
-    logger.debug(f"Main time elapsed: {t2 - t1:.3f} seconds")
-    logger.debug("_____________________________________\n")
+                print(formatted_quantity)
+            else:
+                logger.debug(f"Converting {amount} {coin} to {fiat}")
+                if wordform:
+                    click.echo(f"How much is {amount} {coin} in {fiat}?")
+                quantity = data_parser.convert_to_fiat(fiat.upper(), coin.upper(), amount)
+                formatted_quantity = "{:,.2f}".format(quantity)
+                print(formatted_quantity)
+
+            if clipboard:
+                pyperclip.copy(formatted_quantity)
+                sh.notify_send(APP_NAME, f"{formatted_quantity} copied to clipboard")
+        except Exception as e:
+            logger.exception(e)
 
 
 if __name__ == '__main__':
     core()
+    logger.debug("_____________________________________\n")
