@@ -1,0 +1,66 @@
+<div class="container flex-centered">
+  <!--All the inputs-->
+  <div class="grid">
+    <div class="label-group grid-item grid">
+      <!-- Create an input box named 'currency' -->
+      <div class="input-group">
+        <label for="currency"></label>
+        <input #cryptoInput type="text" name="currency" id="currency" nbInput required
+               [(ngModel)]="model.currency"
+               minlength="3"
+               placeholder="Cryptocurrency"
+               (input)="cryptoInput.value = cryptoInput.value.toLocaleUpperCase()"
+               (ngModelChange)="inputChanged.next('change')"
+        >
+      </div>
+      <!--  Create a reverse button to swap the two inputs. The icon will switch direction on each press -->
+
+      <button (click)="swapDirection=!swapDirection;convert()" class="swap-btn" nbButton ghost status="success">
+        <nb-icon [icon]="!swapDirection ? 'arrow-forward-outline' : 'arrow-back-outline'"
+                 [status]="!swapDirection ? 'info' : 'warning'"
+                 [nbTooltip]="res.swap()"></nb-icon>
+      </button>
+      <!-- Create a second input text box that will be a dropdown of all fiatSelect currencies -->
+      <nb-select #fiatSelect
+                 [(ngModel)]="model.fiat"
+                 (selectedChange)="fiatSelect.status = 'success';convert()"
+                 status='danger'
+                 placeholder="Fiat"
+                 name="fiat"
+      >
+        <nb-option *ngFor="let fiat of fiats"
+                   [value]="fiat">{{fiat}}</nb-option>
+      </nb-select>
+
+      <!-- Create an input text box that will take in the amount to convert -->
+      <div class="input-group">
+        <label for="quantity"></label>
+        <input type="number" name="quantity" id="quantity" nbInput min="0"
+               placeholder="Quantity"
+               [(ngModel)]="model.quantity"
+               (keyup)="inputChanged.next('change')"
+               required>
+      </div>
+      <!--  When enter or a button is pressed, call the conversion function -->
+
+      <!--      <button (click)="swapDirection=!swapDirection;convert()" class="swap-btn" nbButton ghost status="success">-->
+      <!--        <nb-icon icon="swap"></nb-icon>-->
+      <!--      </button>-->
+    </div>
+    <!--    <button nbButton ghost status="success" type="submit">-->
+    <!--      <nb-icon icon="checkmark" status="success"></nb-icon>-->
+    <!--    </button>-->
+    <div class="answer">
+      <h3 *ngIf="!loading; else spinner">
+        {{ !swapDirection ? '$' : '' }}{{answer}} {{ swapDirection ? cryptoInput.value : '' }}
+      </h3>
+      <ng-template #spinner>
+        <nb-spinner size="medium" message="Getting prices..."></nb-spinner>
+      </ng-template>
+    </div>
+
+  </div>
+
+
+</div>
+
