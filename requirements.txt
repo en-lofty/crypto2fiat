@@ -1,0 +1,6 @@
+logzero
+click
+git+https://github.com/en-lofty/Easy-App-Dirs.git#egg=easyappdirs
+-e git+ssh://git@github.com/en-lofty/my_utils.git#egg=my_utils
+pyperclip
+sh

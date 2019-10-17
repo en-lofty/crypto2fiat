@@ -2,8 +2,13 @@
   <dictionary name="raphael">
     <words>
       <w>coinmarketcap</w>
+      <w>cryptocurrencies</w>
       <w>cryptocurrency</w>
+      <w>easyappdirs</w>
+      <w>logzero</w>
       <w>nanje</w>
+      <w>pyperclip</w>
+      <w>pypi</w>
       <w>wordform</w>
     </words>
   </dictionary>

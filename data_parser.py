@@ -2,7 +2,6 @@ from time import time
 from typing import Union
 
 from coinmarketcap import Market
-from my_utils import *
 
 from config import *
 
@@ -19,7 +18,6 @@ class DataParser:
         self._data = dirs.load("data") if dirs.exists("data") else None
         logger.debug("DataParser initialized")
 
-    @measure_time
     def _get_id(self, coin_name: str) -> Union[int, None]:
         """
         Get the id of a coin via its name
@@ -33,11 +31,10 @@ class DataParser:
                 return v.get("id")
 
     @property
-    @measure_time
     def data(self):
         # first check to see if data exists and is still within valid time frame
         if not self.use_existing_data or self.no_cache:
-            logger.info("Downloading coin data from CoinMarketCap server.")
+            logger.info("Downloading coin data from CoinMarketCap server...")
             response = self.coinmarketcap.ticker()
             if "data" not in response:
                 logger.error("Unable to retrieve data from server")
@@ -48,17 +45,15 @@ class DataParser:
             self._data = response["data"]
         return self._data or dirs.load("data")
 
-    @measure_time
     def _get_ticker(self, coin: str, fiat: str) -> Union[dict, None]:
         """
         Grab the coin information from the CoinMarketCap servers
         """
-        logger.info(f"Grabbing {coin} ticker")
+        logger.info(f"Grabbing {coin} ticker...")
         coin_id = self._get_id(coin)
         if str(coin_id) not in self.data:
             exit(f"'{coin}' not recognized.")
         ticker = self.data[str(coin_id)]
-
 
         if fiat not in ticker["quotes"]:
             new_ticker = self.coinmarketcap.ticker(str(coin_id), convert=fiat)["data"]
@@ -72,7 +67,6 @@ class DataParser:
         return self.data[str(coin_id)]
         # check last coin data save date
 
-    @measure_time
     @property
     def use_existing_data(self) -> bool:
         """
@@ -88,7 +82,6 @@ class DataParser:
         # was the last time we checked less than 30 minutes ago?
         return int(round(time() * 1000)) - last_check_time < settings.CACHE_REFRESH_TIME * (1000 * 60)
 
-    @measure_time
     def _get_fiat_price(self, fiat: str, coin: str) -> float:
         """
         Get the value in fiat for 1 coin
@@ -99,23 +92,22 @@ class DataParser:
                  "Use --help to see available currencies.")
         return float(quotes[fiat]["price"])
 
-    @measure_time
     def convert_to_fiat(self, fiat: str, coin: str, amount: float) -> float:
         """
         Convert the given coin to the equivalent fiat amount
         """
+        logger.debug('Converting %s %s to %s...', amount, coin, fiat)
         price = self._get_fiat_price(fiat, coin)
         return float(amount * price)
 
-    @measure_time
     def convert_to_crypto(self, fiat: str, coin: str, amount: float):
         """
         Take a usd amount and find the crypto coin equivalent
         """
+        logger.debug('Converting %s %s to %s...', amount, fiat, coin)
         price = self._get_fiat_price(fiat, coin)
         return float(amount / price)
 
-    @measure_time
     def _generate_ids(self):
         if dirs.exists("ids"):
             self._coin_ids = dirs.load("ids")

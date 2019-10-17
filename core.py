@@ -1,4 +1,4 @@
-#!/home/raphael/.local/share/virtualenvs/python-O_96yZmr/bin/python
+#!/home/raphael/.local/share/virtualenvs/crypto2fiat-zkZtR6RQ/bin/python
 
 import click
 import logzero
@@ -9,10 +9,11 @@ from my_utils import util_setup, MeasureBlockTime
 from config import *
 from data_parser import DataParser
 
+
 @click.command()
 @click.argument('coin')
 @click.argument('fiat')
-@click.argument('amount', type=float)
+@click.argument('amount', type=float, default=1)
 @click.option('--reverse', "-r", multiple=True, is_flag=True, default=False, help="Fiat to cryptocurrency")
 @click.option('--clipboard', '-c', multiple=True, is_flag=True, default=False, help="Copy the result to the clipboard")
 @click.option('--verbose', '-v', multiple=True, is_flag=True, default=False)
@@ -48,7 +49,6 @@ def core(coin: str, fiat: str, amount: float, reverse: bool, clipboard: bool, ve
 
         try:
             if reverse:
-                logger.debug(f"Converting {amount} {fiat} to {coin}")
                 if wordform:
                     click.echo(f"What is ${amount:.2f} {fiat} worth in {coin}?")
                 quantity = data_parser.convert_to_crypto(fiat.upper(), coin.upper(), amount)
@@ -56,7 +56,6 @@ def core(coin: str, fiat: str, amount: float, reverse: bool, clipboard: bool, ve
 
                 print(formatted_quantity)
             else:
-                logger.debug(f"Converting {amount} {coin} to {fiat}")
                 if wordform:
                     click.echo(f"How much is {amount} {coin} in {fiat}?")
                 quantity = data_parser.convert_to_fiat(fiat.upper(), coin.upper(), amount)
